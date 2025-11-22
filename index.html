@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBER - Aleks Koloch</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #2c2c2c;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+            font-family: 'UberMove', sans-serif;
+        }
+        .menu-button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        .menu-panel {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 10px;
+            width: 200px;
+            background: #222;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            padding: 10px;
+            z-index: 1000;
+        }
+        .menu-panel button, .menu-panel input, .menu-panel select {
+            display: block;
+            width: 100%;
+            background: #007bff;
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        .menu-panel input, .menu-panel select {
+            background: #333;
+            padding: 8px;
+        }
+        .menu-panel button:hover {
+            background: #0056b3;
+        }
+        .driver-info {
+            padding: 10px;
+            background: #333;
+            margin: 10px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            transition: height 0.3s ease;
+        }
+        .driver-info.collapsed {
+            height: 0;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        .collapse-button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.2em;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        .map-container {
+            flex: 1;
+            min-height: 300px;
+            margin: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 10;
+            position: relative;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        .status-button {
+            margin: 10px auto;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            width: 200px;
+            text-align: center;
+            z-index: 100;
+        }
+        .status-button.available {
+            background: #00cc00;
+            box-shadow: 0 0 15px #00cc00;
+        }
+        .status-button.available:hover {
+            background: #00e600;
+        }
+        .status-button.busy {
+            background: #ff3333;
+            box-shadow: 0 0 15px #ff3333;
+        }
+        .status-button.busy:hover {
+            background: #ff4d4d;
+        }
+        .status-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none; 
+        }
+        .order-container {
+            margin: 10px;
+            padding: 15px;
+            background: #333;
+            border-radius: 10px;
+            animation: slideIn 0.5s ease;
+            z-index: 100;
+        }
+        .order-container h3 {
+            margin: 0 0 10px;
+        }
+        .order-button, .cancel-button, .end-button, .receipt-button, .break-button, .drive-button, .deduct-fuel-button, .discard-receipt-button, .end-work-button, .login-button, .close-app-button, .confirm-arrival-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+        .order-button {
+            background: #007bff;
+        }
+        .order-button:hover {
+            background: #0056b3;
+        }
+        .cancel-button {
+            background: #ff3333;
+        }
+        .cancel-button:hover {
+            background: #cc0000;
+        }
+        .end-button {
+            background: #ff9900;
+        }
+        .end-button:hover {
+            background: #cc7700;
+        }
+        .receipt-button {
+            background: #666;
+        }
+        .receipt-button:hover {
+            background: #555;
+        }
+        .discard-receipt-button {
+            background: #ff3333;
+        }
+        .discard-receipt-button:hover {
+            background: #cc0000;
+        }
+        .break-button, .drive-button, .end-work-button, .login-button, .confirm-arrival-button {
+            background: #00cc00;
+        }
+        .break-button:hover, .drive-button:hover, .end-work-button:hover, .login-button:hover, .confirm-arrival-button:hover {
+            background: #00e600;
+        }
+        .close-app-button {
+            background: #666;
+        }
+        .close-app-button:hover {
+            background: #555;
+        }
+        .deduct-fuel-button {
+            background: #cc00cc;
+            margin: 10px auto;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            width: 200px;
+            text-align: center;
+        }
+        .deduct-fuel-button:hover {
+            background: #b300b3;
+        }
+        .deduct-fuel-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .earnings, .stats {
+            margin: 10px;
+            padding: 15px;
+            background: #333;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+        }
+        .support-button, .receipts-button, .tachograph-button, .fuel-button, .fullscreen-button {
+            position: fixed;
+            bottom: 20px;
+            background: #007bff;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            color: #fff;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .support-button {
+            right: 20px;
+        }
+        .receipts-button {
+            right: 90px;
+        }
+        .tachograph-button {
+            right: 160px;
+        }
+        .fuel-button {
+            right: 230px;
+        }
+        .fullscreen-button {
+            right: 300px;
+        }
+        .support-button:hover, .receipts-button:hover, .tachograph-button:hover, .fuel-button:hover, .fullscreen-button:hover {
+            transform: scale(1.1);
+        }
+        .support-button.notify::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 15px;
+            height: 15px;
+            background: #ff3333;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        .chat-container, .receipts-panel, .tachograph-panel, .fuel-panel, .receipt-popup {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 300px;
+            max-height: 400px;
+            background: #222;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            padding: 10px;
+            z-index: 1001;
+        }
+        .chat-container {
+            display: none;
+        }
+        .receipt-popup {
+            bottom: 150px;
+            right: 50%;
+            transform: translateX(50%);
+            width: 90%;
+            max-width: 400px;
+        }
+        .fullscreen-notification {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            z-index: 2000;
+            font-family: 'UberMove', sans-serif;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .fullscreen-notification.active {
+            display: flex;
+        }
+        .fullscreen-notification .timer {
+            font-size: 1.8em;
+            color: #ff3333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .fullscreen-notification .order-details {
+            background: #1c1c1c;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 400px;
+        }
+        .fullscreen-notification .order-details h2 {
+            font-size: 1.8em;
+            margin: 0 0 10px;
+            color: #00cc00;
+        }
+        .fullscreen-notification .order-details p {
+            font-size: 1.1em;
+            margin: 5px 0;
+            color: #ccc;
+        }
+        .fullscreen-notification .order-actions {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 400px;
+            padding: 0;
+        }
+        .fullscreen-notification .order-button, .fullscreen-notification .cancel-button {
+            width: 48%;
+            font-size: 1.4em;
+            padding: 20px;
+            border-radius: 30px;
+            font-weight: bold;
+        }
+        .fullscreen-notification .order-button {
+            background: #00cc00;
+        }
+        .fullscreen-notification .order-button:hover {
+            background: #00e600;
+        }
+        .fullscreen-notification .cancel-button {
+            background: #333;
+        }
+        .fullscreen-notification .cancel-button:hover {
+            background: #444;
+        }
+        .fullscreen-notification .close-fullscreen {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        .chat-message {
+            background: #333;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 10px;
+            animation: slideIn 0.5s ease;
+        }
+        .chat-message.driver {
+            background: #007bff;
+            text-align: right;
+        }
+        .chat-message.support {
+            background: #555;
+            text-align: left;
+        }
+        .chat-input {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 10px;
+            background: #222;
+            border-top: 1px solid #444;
+        }
+        .chat-input button {
+            background: #007bff;
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .chat-input button:hover {
+            background: #0056b3;
+        }
+        .receipt-container, .tachograph-info, .fuel-info {
+            margin: 10px 0;
+            padding: 15px;
+            background: #333;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+        }
+        .notification {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            font-size: 1em;
+            text-align: center;
+            animation: slideInNotification 0.3s ease, slideOutNotification 0.3s ease 2.7s;
+            max-width: 90%;
+        }
+        .end-work-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            font-family: 'UberMove', sans-serif;
+        }
+        .end-work-screen h1 {
+            font-size: 4em;
+            margin: 0;
+        }
+        .end-work-screen p {
+            font-size: 1.2em;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .end-work-screen .motto {
+            position: absolute;
+            bottom: 10px;
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+        .icon-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #007bff;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            color: #fff;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        /* Zmieniona sekcja: Przeniesienie przycisku wyciszenia do prawego górnego rogu */
+        #muteButton {
+            top: 15px; 
+            right: 15px; 
+            bottom: auto; 
+            left: auto;   
+            background: #cc00cc; 
+            font-size: 1.5em;
+            z-index: 1001; 
+        }
+
+        .icon-toggle:hover {
+            transform: scale(1.1);
+        }
+        @keyframes slideInNotification {
+            from { transform: translateX(-50%) translateY(-50px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        @keyframes slideOutNotification {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-50px); opacity: 0; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.2em; }
+            .status-button, .deduct-fuel-button { width: 150px; font-size: 1em; }
+            .map-container { min-height: 200px; }
+            .chat-container, .receipts-panel, .tachograph-panel, .fuel-panel, .receipt-popup {
+                width: 90%;
+                max-height: 300px;
+                right: 5%;
+                bottom: 80px;
+                z-index: 1001;
+            }
+            .support-button, .receipts-button, .tachograph-button, .fuel-button, .fullscreen-button, .icon-toggle {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2em;
+            }
+            .receipts-button { right: 80px; }
+            .tachograph-button { right: 130px; }
+            .fuel-button { right: 180px; }
+            .fullscreen-button { right: 230px; }
+            /* Nowa pozycja w widoku mobilnym */
+            #muteButton { 
+                top: 10px;
+                right: 10px;
+                bottom: auto;
+                left: auto;
+                width: 40px;
+                height: 40px;
+                font-size: 1.2em;
+            }
+            .notification { font-size: 0.9em; padding: 8px 15px; }
+            .end-work-screen h1 { font-size: 2.5em; }
+            .end-work-screen p { font-size: 1em; }
+            .fullscreen-notification .timer { font-size: 1.5em; }
+            .fullscreen-notification .order-details h2 { font-size: 1.5em; }
+            .fullscreen-notification .order-details p { font-size: 1em; }
+            .fullscreen-notification .order-button, .fullscreen-notification .cancel-button { font-size: 1.2em; padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button id="menuButton" class="menu-button">☰</button>
+            <h1>UBER</h1>
+            <div></div>
+        </div>
+        <div id="menuPanel" class="menu-panel">
+            <input id="vehicleInput" type="text" placeholder="Wpisz nazwę pojazdu" value="Opel Vectra C 2009">
+            <select id="fuelConsumptionSelect">
+                <option value="spokojna">Spokojna</option>
+                <option value="normalna">Normalna</option>
+                <option value="agresywna">Agresywna</option>
+                <option value="custom">Niestandardowe</option>
+            </select>
+            <input id="customFuelInput" type="number" step="0.1" placeholder="Spalanie (l/100km)" style="display: none;">
+            <button onclick="changeVehicle()">Zmień pojazd i spalanie</button>
+            <button onclick="restartStatus()">Restartuj status</button>
+            <button onclick="restartApplication()">Restartuj aplikację</button>
+            <button onclick="logout()">Wyloguj</button>
+            <button class="cancel-button" onclick="forceLogout()">Wyloguj się mimo wszystko</button>
+        </div>
+        <div id="driverInfo" class="driver-info">
+            <button id="collapseButton" class="collapse-button">⬇</button>
+            <h2>Aleks Koloch</h2>
+            <p id="vehicleName">Opel Vectra C 2009</p>
+        </div>
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        <button id="statusButton" class="status-button available">Dostępny</button>
+        <div id="orderContainer"></div>
+        <div class="stats">
+            <h3>Statystyki</h3>
+            <p id="totalKilometers">Przejechane kilometry: 0 km</p>
+            <p id="activeOrders">Aktywne zlecenia: 0</p>
+            <p id="totalFuel">Zużyte paliwo: 0 l</p>
+            <p id="lastTripStats">Ostatni przejazd: Brak</p>
+            </div>
+        <button id="deductFuelButton" class="deduct-fuel-button" onclick="deductFuelCosts()" disabled>Odlicz koszt paliwa</button>
+        <div class="earnings">
+            <h3>Zarobki</h3>
+            <p id="totalEarnings">0.00 zł</p>
+            <p id="fuelCost">Koszty paliwa: 0.00 zł (Oczekujące: 0.00 zł)</p>
+            <p id="netEarnings">Zarobki netto: 0.00 zł</p>
+            <p id="totalOrders">Całkowita liczba zleceń: 0</p>
+            <p id="averageEarnings">Średni zarobek na zlecenie: 0.00 zł</p>
+        </div>
+    </div>
+    <button id="iconToggle" class="icon-toggle">⬆</button>
+    <button id="muteButton" class="icon-toggle">🔊</button>
+    <button id="supportButton" class="support-button">💬</button>
+    <button id="receiptsButton" class="receipts-button">📄</button>
+    <button id="tachographButton" class="tachograph-button">⏱️</button>
+    <button id="fuelButton" class="fuel-button">⛽</button>
+    <button id="fullscreenButton" class="fullscreen-button">📱</button>
+    <div id="chatContainer" class="chat-container">
+        <div id="chatMessages"></div>
+        <div class="chat-input">
+            <button onclick="sendSupportRequest('Anuluj zlecenie')">Anuluj zlecenie</button>
+            <button onclick="sendSupportRequest('Klient zostawił rzecz')">Zgubiona rzecz</button>
+            <button onclick="sendSupportRequest('Klient nie pojawił się')">Klient nie pojawił</button>
+            <button onclick="sendSupportRequest('Problem z płatnością')">Problem z płatnością</button>
+        </div>
+    </div>
+    <div id="receiptsPanel" class="receipts-panel"></div>
+    <div id="tachographPanel" class="tachograph-panel">
+        <h3>Tachograf</h3>
+        <div id="breakInfo" class="tachograph-info"></div>
+        <button id="startBreakButton" class="break-button" onclick="startBreak()">Rozpocznij przerwę</button>
+        <div id="driveInfo" class="tachograph-info"></div>
+        <button id="startDriveButton" class="drive-button" onclick="startDrive()">Rozpocznij jazdę</button>
+        <button id="endWorkButton" class="end-work-button" onclick="endWork()">Zakończ pracę</button>
+    </div>
+    <div id="fuelPanel" class="fuel-panel">
+        <h3>Kalkulator Paliwa</h3>
+        <div id="fuelInfo" class="fuel-info"></div>
+    </div>
+    <div id="receiptPopup" class="receipt-popup"></div>
+    <div id="fullscreenNotification" class="fullscreen-notification">
+        <button class="close-fullscreen">✖</button>
+        <div class="timer" id="fullscreenTimer"></div>
+        <div class="order-details">
+            <h2 id="fullscreenOrderNumber"></h2>
+            <p id="fullscreenPhoneNumber"></p>
+            <p id="fullscreenLocation"></p>
+            <p id="fullscreenDistance"></p>
+            <p id="fullscreenCost"></p>
+        </div>
+        <div class="order-actions">
+            <button class="order-button" id="fullscreenAcceptButton">Akceptuj</button>
+            <button class="cancel-button" id="fullscreenRejectButton">Odrzuć</button>
+        </div>
+    </div>
+    <div id="endWorkScreen" class="end-work-screen">
+        <h1>UBER</h1>
+        <p>Aby zacząć pracować, uruchom ponownie aplikację.<br>Dziękujemy, że jesteś z nami!</p>
+        <button class="login-button" onclick="login()">Zaloguj się</button>
+        <button class="close-app-button" onclick="closeApp()">Zamknij aplikację</button>
+        <p class="motto">UBER DRIVE – Razem w drodze</p>
+    </div>
+
+    <audio id="orderSound" src="order_notification.mp3"></audio>
+    <audio id="chatSound" src="chat_notification.mp3"></audio>
+    <audio id="receiptSound" src="receipt_print.mp3"></audio>
+    <audio id="moneySound" src="money_sound.mp3"></audio>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Uber font
+        const fontLink = document.createElement('link');
+        fontLink.href = 'https://fonts.cdnfonts.com/css/uber-move';
+        fontLink.rel = 'stylesheet';
+        document.head.appendChild(fontLink);
+
+        // Mapa z Leaflet
+        const map = L.map('map').setView([50.348, 18.932], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Other taxis
+        const otherTaxis = [];
+        const numTaxis = Math.floor(Math.random() * (120 - 80 + 1)) + 80;
+        for (let i = 0; i < numTaxis; i++) {
+            const lat = 50.348 + (Math.random() - 0.5) * 0.5;
+            const lon = 18.932 + (Math.random() - 0.5) * 0.5;
+            const marker = L.marker([lat, lon], {
+                icon: L.divIcon({
+                    className: 'taxi-icon',
+                    html: '🚕',
+                    iconSize: [33, 33]
+                })
+            }).addTo(map);
+            otherTaxis.push({ marker, lat, lon, direction: Math.random() * 2 * Math.PI });
+        }
+
+        function moveTaxis() {
+            otherTaxis.forEach(taxi => {
+                const speed = 0.0001 * (Math.random() * 0.5 + 0.5);
+                taxi.lat += Math.sin(taxi.direction) * speed;
+                taxi.lon += Math.cos(taxi.direction) * speed;
+                if (Math.random() < 0.05) {
+                    taxi.direction += (Math.random() - 0.5) * Math.PI / 4;
+                }
+                if (taxi.lat < 50.1 || taxi.lat > 50.6 || taxi.lon < 18.7 || taxi.lon > 19.2) {
+                    taxi.direction += Math.PI;
+                }
+                taxi.marker.setLatLng([taxi.lat, taxi.lon]);
+            });
+            setTimeout(moveTaxis, 1000);
+        }
+        moveTaxis();
+
+        // Dźwięki
+        const orderSound = document.getElementById('orderSound');
+        const chatSound = document.getElementById('chatSound');
+        const receiptSound = document.getElementById('receiptSound');
+        const moneySound = document.getElementById('moneySound');
+        orderSound.volume = 0.5;
+        chatSound.volume = 0.5;
+        receiptSound.volume = 0.5;
+        moneySound.volume = 0.5;
+
+        // Przycisk statusu
+        const statusButton = document.getElementById('statusButton');
+        let isAvailable = true;
+        
+        function updateStatusButton() {
+            const isTrulyDisabled = activeOrders > 0 || isOnBreak;
+            
+            // NOWA LOGIKA: Blokada statusu po akceptacji zlecenia
+            if (isStatusLockedBusy) {
+                statusButton.textContent = 'Zajęty (Zlecenie)';
+                statusButton.className = 'status-button busy';
+                statusButton.disabled = true; 
+                statusButton.style.boxShadow = '0 0 15px #ff3333';
+                return;
+            }
+            // KONIEC NOWEJ LOGIKI
+            
+            statusButton.textContent = isAvailable ? 'Dostępny' : 'Zajęty';
+            statusButton.className = `status-button ${isAvailable ? 'available' : 'busy'}`;
+            
+            statusButton.disabled = isTrulyDisabled;
+
+            if (isTrulyDisabled) {
+                statusButton.style.boxShadow = 'none';
+            } else {
+                statusButton.style.boxShadow = isAvailable ? '0 0 15px #00cc00' : '0 0 15px #ff3333'; 
+            }
+
+            if (!isAvailable) {
+                document.getElementById('chatContainer').style.display = 'none';
+                document.getElementById('receiptsPanel').style.display = 'none';
+                document.getElementById('tachographPanel').style.display = 'none';
+                document.getElementById('fuelPanel').style.display = 'none';
+                document.getElementById('receiptPopup').style.display = 'none';
+                document.getElementById('fullscreenNotification').style.display = 'none';
+            }
+        }
+        
+        statusButton.addEventListener('click', () => {
+            if (activeOrders === 0 && !isOnBreak) {
+                isAvailable = !isAvailable;
+                updateStatusButton();
+                if (!isAvailable) {
+                    document.getElementById('orderContainer').innerHTML = '';
+                }
+            } else if (activeOrders > 0) {
+                 const notification = document.createElement('div');
+                 notification.className = 'notification';
+                 notification.textContent = 'Nie można zmienić statusu, gdy masz aktywne zlecenie!';
+                 document.body.appendChild(notification);
+                 setTimeout(() => notification.remove(), 3000);
+            }
+        });
+
+        // Fullscreen notification toggle
+        let isFullscreenNotificationEnabled = false;
+        const fullscreenButton = document.getElementById('fullscreenButton');
+        fullscreenButton.addEventListener('click', () => {
+            isFullscreenNotificationEnabled = !isFullscreenNotificationEnabled;
+            fullscreenButton.style.background = isFullscreenNotificationEnabled ? '#00cc00' : '#007bff';
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = isFullscreenNotificationEnabled ? 'Powiadomienia pełnoekranowe włączone' : 'Powiadomienia pełnoekranowe wyłączone';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        });
+
+        // Mute button
+        let isMuted = false;
+        const muteButton = document.getElementById('muteButton');
+        muteButton.addEventListener('click', () => {
+            isMuted = !isMuted;
+            muteButton.textContent = isMuted ? '🔇' : '🔊';
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = isMuted ? 'Wyciszono dźwięki' : 'Włączono dźwięki';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        });
+
+        // Support chat toggle
+        const supportButton = document.getElementById('supportButton');
+        const chatContainer = document.getElementById('chatContainer');
+        supportButton.addEventListener('click', () => {
+            chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
+            supportButton.classList.remove('notify');
+            document.getElementById('receiptsPanel').style.display = 'none';
+            document.getElementById('tachographPanel').style.display = 'none';
+            document.getElementById('fuelPanel').style.display = 'none';
+            document.getElementById('receiptPopup').style.display = 'none';
+            document.getElementById('fullscreenNotification').style.display = 'none';
+        });
+
+        // Receipts panel toggle
+        const receiptsButton = document.getElementById('receiptsButton');
+        const receiptsPanel = document.getElementById('receiptsPanel');
+        const receiptPopup = document.getElementById('receiptPopup');
+        receiptsButton.addEventListener('click', () => {
+            receiptsPanel.style.display = receiptsPanel.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('chatContainer').style.display = 'none';
+            document.getElementById('tachographPanel').style.display = 'none';
+            document.getElementById('fuelPanel').style.display = 'none';
+            document.getElementById('receiptPopup').style.display = 'none';
+            document.getElementById('fullscreenNotification').style.display = 'none';
+            renderReceipts();
+        });
+
+        // Tachograph panel toggle
+        const tachographButton = document.getElementById('tachographButton');
+        const tachographPanel = document.getElementById('tachographPanel');
+        tachographButton.addEventListener('click', () => {
+            tachographPanel.style.display = tachographPanel.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('chatContainer').style.display = 'none';
+            document.getElementById('receiptsPanel').style.display = 'none';
+            document.getElementById('fuelPanel').style.display = 'none';
+            document.getElementById('receiptPopup').style.display = 'none';
+            document.getElementById('fullscreenNotification').style.display = 'none';
+            updateBreakInfo();
+            updateDriveInfo();
+        });
+
+        // Fuel panel toggle
+        const FUEL_PRICE_PER_LITER = 6.50; // Cena paliwa
+        const DRIVING_STYLES = {
+            spokojna: { name: 'Spokojna', consumption: [5.5, 7.5] }, // l/100km
+            normalna: { name: 'Normalna', consumption: [7.5, 9.5] },
+            agresywna: { name: 'Agresywna', consumption: [9.5, 11.5] },
+            custom: { name: 'Niestandardowe', consumption: [8.5, 8.5] } 
+        };
+        let totalFuelConsumed = 0;
+        let totalFuelCost = 0;
+        let pendingFuelConsumed = 0;
+        let pendingFuelCost = 0;
+        let netEarnings = 0;
+        let currentDrivingStyle = 'normalna';
+
+        const fuelButton = document.getElementById('fuelButton');
+        const fuelPanel = document.getElementById('fuelPanel');
+        fuelButton.addEventListener('click', () => {
+            fuelPanel.style.display = fuelPanel.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('chatContainer').style.display = 'none';
+            document.getElementById('receiptsPanel').style.display = 'none';
+            document.getElementById('tachographPanel').style.display = 'none';
+            document.getElementById('receiptPopup').style.display = 'none';
+            document.getElementById('fullscreenNotification').style.display = 'none';
+            updateFuelInfo();
+        });
+
+        function calculateFuelConsumption(distance, style) {
+            const consumptionRange = DRIVING_STYLES[style].consumption;
+            const consumption = (consumptionRange[0] + Math.random() * (consumptionRange[1] - consumptionRange[0])) / 100;
+            return distance * consumption;
+        }
+
+        function updateFuelInfo() {
+            const fuelInfo = document.getElementById('fuelInfo');
+            const consumptionDisplay = currentDrivingStyle === 'custom' ? `${DRIVING_STYLES.custom.consumption[0].toFixed(1)} l/100km` : `${DRIVING_STYLES[currentDrivingStyle].consumption[0].toFixed(1)}-${DRIVING_STYLES[currentDrivingStyle].consumption[1].toFixed(1)} l/100km`;
+            fuelInfo.textContent = `
+ Kalkulator Paliwa:
+ ----------------------
+ Zużyto paliwa: ${totalFuelConsumed.toFixed(2)} l
+ Koszt paliwa: ${totalFuelCost.toFixed(2)} zł
+ Oczekujące paliwo: ${pendingFuelConsumed.toFixed(2)} l
+ Oczekujący koszt: ${pendingFuelCost.toFixed(2)} zł
+ Cena za litr: ${FUEL_PRICE_PER_LITER.toFixed(2)} zł
+ Styl jazdy: ${DRIVING_STYLES[currentDrivingStyle].name} (${consumptionDisplay})
+ `;
+        }
+
+        function deductFuelCosts() {
+            if (pendingFuelConsumed > 0) {
+                totalFuelConsumed += pendingFuelConsumed;
+                totalFuelCost += pendingFuelCost;
+                netEarnings -= pendingFuelCost;
+                pendingFuelConsumed = 0;
+                pendingFuelCost = 0;
+                document.getElementById('deductFuelButton').disabled = true;
+                updateFuelInfo();
+                document.getElementById('fuelCost').textContent = `Koszty paliwa: ${totalFuelCost.toFixed(2)} zł (Oczekujące: ${pendingFuelCost.toFixed(2)} zł)`;
+                document.getElementById('netEarnings').textContent = `Zarobki netto: ${netEarnings.toFixed(2)} zł`;
+                document.getElementById('totalFuel').textContent = `Zużyte paliwo: ${totalFuelConsumed.toFixed(2)} l`;
+
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Koszty paliwa odliczone!';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+        }
+
+        // Collapse driver info
+        const driverInfo = document.getElementById('driverInfo');
+        const collapseButton = document.getElementById('collapseButton');
+        collapseButton.addEventListener('click', () => {
+            driverInfo.classList.toggle('collapsed');
+            collapseButton.textContent = driverInfo.classList.contains('collapsed') ? '⬆' : '⬇';
+        });
+
+        // Menu panel
+        const menuButton = document.getElementById('menuButton');
+        const menuPanel = document.getElementById('menuPanel');
+        menuButton.addEventListener('click', () => {
+            menuPanel.style.display = menuPanel.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Custom fuel consumption input toggle
+        const fuelConsumptionSelect = document.getElementById('fuelConsumptionSelect');
+        const customFuelInput = document.getElementById('customFuelInput');
+        fuelConsumptionSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                customFuelInput.style.display = 'block';
+                customFuelInput.focus();
+            } else {
+                customFuelInput.style.display = 'none';
+            }
+        });
+
+        // Vehicle change
+        function changeVehicle() {
+            const newVehicle = document.getElementById('vehicleInput').value.trim();
+            const newStyle = document.getElementById('fuelConsumptionSelect').value;
+            const newCustomConsumption = parseFloat(document.getElementById('customFuelInput').value);
+
+            if (newVehicle) {
+                vehicleName = newVehicle;
+            }
+
+            if (newStyle === 'custom' && !isNaN(newCustomConsumption) && newCustomConsumption > 0) {
+                currentDrivingStyle = 'custom';
+                DRIVING_STYLES.custom.consumption[0] = newCustomConsumption;
+                DRIVING_STYLES.custom.consumption[1] = newCustomConsumption;
+            } else if (newStyle !== 'custom') {
+                currentDrivingStyle = newStyle;
+            } else if (newStyle === 'custom' && (isNaN(newCustomConsumption) || newCustomConsumption <= 0)) {
+                currentDrivingStyle = 'normalna';
+                document.getElementById('fuelConsumptionSelect').value = 'normalna';
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Nieprawidłowa wartość spalania. Ustawiono "Normalna".';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+
+            document.getElementById('vehicleName').textContent = vehicleName;
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = `Pojazd zmieniony na: ${vehicleName}`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+            updateFuelInfo();
+            menuPanel.style.display = 'none';
+        }
+
+        // Wylogowanie
+        function logout() {
+            // Kontrolowane wylogowanie (używa endWork, które sprawdza aktywne zlecenia)
+            endWork();
+        }
+
+        // NOWA FUNKCJA DO FORCINGU WYLOGOWANIA
+        function forceLogout() {
+            // Unconditional logout, clearing everything
+            activeOrders = 0;
+            isAvailable = false;
+            isOnBreak = false;
+            isStatusLockedBusy = false; // Zwalnia blokadę statusu
+            updateStatusButton();
+
+            timers.forEach(clearInterval);
+            timers.clear();
+            orderTimers.forEach(clearInterval);
+            orderTimers.clear();
+
+            document.getElementById('orderContainer').innerHTML = '';
+            document.getElementById('activeOrders').textContent = `Aktywne zlecenia: 0`;
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = 'Wylogowano awaryjnie. Wszelkie aktywne zlecenia zostały anulowane.';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+
+            document.getElementById('endWorkScreen').style.display = 'flex';
+            menuPanel.style.display = 'none';
+        }
+
+        // NOWA FUNKCJA: Restart statusu
+        function restartStatus() {
+            if (activeOrders === 0) {
+                isAvailable = true;
+                isStatusLockedBusy = false;
+                updateStatusButton();
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Status zresetowany na "Dostępny".';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            } else {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Nie można zresetować statusu, masz aktywne zlecenie!';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+            document.getElementById('menuPanel').style.display = 'none';
+        }
+
+        // NOWA FUNKCJA: Restart aplikacji (odświeżenie strony)
+        function restartApplication() {
+            window.location.reload();
+        }
+
+        // End work logic
+        function endWork() {
+            if (activeOrders > 0) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Zakończenie pracy niemożliwe. Masz aktywne zlecenia!';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+                return;
+            }
+
+            // Upewnienie się, że jesteś poza jazdą i przerwą
+            if (isOnBreak) endBreak();
+            if (isDriving) endDrive();
+
+            document.getElementById('endWorkScreen').style.display = 'flex';
+        }
+
+        function login() {
+            document.getElementById('endWorkScreen').style.display = 'none';
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = 'Zalogowano pomyślnie. Status: Dostępny.';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // FUNKCJA: Zamknięcie aplikacji/wyjście z przeglądarki
+        function closeApp() {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = 'Aplikacja się zamyka. Do zobaczenia!';
+            document.body.appendChild(notification);
+            
+            // Próba zamknięcia okna/karty przeglądarki po krótkim opóźnieniu.
+            setTimeout(() => {
+                window.open('', '_self').close();
+            }, 1000); 
+        }
+
+        const locations = [
+            { name: "Piekary Śląskie, ul. Bytomska 5", lat: 50.380, lon: 18.960 },
+            { name: "Bytom, Rynek 1", lat: 50.350, lon: 18.915 },
+            { name: "Chorzów, ul. Katowicka 20", lat: 50.280, lon: 18.980 },
+            { name: "Katowice, Spodek", lat: 50.258, lon: 19.020 },
+            { name: "Ruda Śląska, Plac Jana Pawła II", lat: 50.260, lon: 18.860 },
+            { name: "Tarnowskie Góry, Stare Miasto", lat: 50.450, lon: 18.850 },
+            { name: "Gliwice, Rynek", lat: 50.290, lon: 18.660 },
+            { name: "Zabrze, Arena Zabrze", lat: 50.315, lon: 18.810 },
+            { name: "Będzin, Zamek", lat: 50.330, lon: 19.130 },
+            { name: "Sosnowiec, Dworzec Główny", lat: 50.280, lon: 19.150 }
+        ];
+
+        function getRandomLocation() {
+            return locations[Math.floor(Math.random() * locations.length)];
+        }
+
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Promień Ziemi w km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function generateOrder(orderIndex) {
+            const startLocation = getRandomLocation();
+            let endLocation = getRandomLocation();
+            while (endLocation === startLocation) {
+                endLocation = getRandomLocation();
+            }
+
+            const distance = haversineDistance(startLocation.lat, startLocation.lon, endLocation.lat, endLocation.lon);
+
+            // Symulacja dodatkowych opłat/napiwków
+            const fees = [];
+            let feeTotal = 0;
+            if (Math.random() < 0.2) { // 20% szans na opłatę za bagaż
+                fees.push({ name: 'Bagaż', cost: 5.00 });
+                feeTotal += 5.00;
+            }
+            if (Math.random() < 0.1) { // 10% szans na opłatę za oczekiwanie
+                fees.push({ name: 'Oczekiwanie', cost: 10.00 });
+                feeTotal += 10.00;
+            }
+
+            let tip = 0;
+            if (Math.random() < 0.25) { // 25% szans na napiwek
+                tip = (Math.random() * (15.00 - 3.00) + 3.00); // 3-15 zł
+            }
+
+            const totalCost = calculateBaseCost(distance) + feeTotal;
+
+            return {
+                name: `${startLocation.name} -> ${endLocation.name}`,
+                lat: endLocation.lat,
+                lon: endLocation.lon,
+                distance: distance,
+                totalCost: totalCost,
+                feeDetails: fees,
+                tip: tip,
+                isBytomOrPiekary: startLocation.name.includes('Bytom') || startLocation.name.includes('Piekary') || endLocation.name.includes('Bytom') || endLocation.name.includes('Piekary')
+            };
+        }
+
+        const ordersPool = [];
+        for (let i = 0; i < 50; i++) {
+            const location = getRandomLocation();
+            const distance = Math.random() * (25 - 2) + 2; // 2-25 km
+            const totalCost = calculateBaseCost(distance);
+            const feeDetails = [];
+            let feeTotal = 0;
+            let tip = 0;
+
+            if (Math.random() < 0.2) {
+                feeDetails.push({ name: 'Bagaż', cost: 5.00 });
+                feeTotal += 5.00;
+            }
+            if (Math.random() < 0.1) {
+                tip = Math.random() * (15.00 - 3.00) + 3.00;
+            }
+            
+            ordersPool.push({
+                name: `Odbiór: ${location.name}`,
+                lat: location.lat,
+                lon: location.lon,
+                distance: distance,
+                totalCost: totalCost + feeTotal,
+                feeDetails: feeDetails,
+                tip: tip,
+                isBytomOrPiekary: Math.random() < 0.3
+            });
+        }
+
+        let totalEarnings = 0;
+        let totalKilometers = 0;
+        let activeOrders = 0;
+        let orderCounter = 0;
+        let totalOrders = 0;
+        const usedOrders = new Set();
+        const markers = new Map();
+        const timers = new Map(); // Stopwatches po przyjeździe
+        const orderTimers = new Map(); // Timery akceptacji (NOWE)
+        const receipts = [];
+        let isOnBreak = false;
+        let breakTimeLeft = 0;
+        let breakResetTime = 0;
+        let isDriving = false;
+        let driveTime = 0;
+        let driveDistance = 0;
+        let driveOrders = 0;
+        let vehicleName = "Opel Vectra C 2009";
+        const arrivalConfirmed = new Map();
+
+        // NOWE ZMIENNE DLA OSTATNIEGO PRZEJAZDU
+        let lastTripDistance = 0;
+        let lastTripTime = 0; // Czas w sekundach
+        let lastTripOrderNumber = 0;
+        let isStatusLockedBusy = false; // NOWA ZMIENNA DLA BLOKADY STATUSU
+
+        function calculateBaseCost(distance) {
+            const baseFare = 8.00;
+            const perKm = 4.70;
+            return baseFare + (distance * perKm);
+        }
+
+        function updateEarningsStats() {
+            document.getElementById('totalOrders').textContent = `Całkowita liczba zleceń: ${totalOrders}`;
+            document.getElementById('averageEarnings').textContent = `Średni zarobek na zlecenie: ${totalOrders > 0 ? (totalEarnings / totalOrders).toFixed(2) : '0.00'} zł`;
+        }
+
+        // NOWA FUNKCJA DLA STATYSTYK OSTATNIEGO PRZEJAZDU
+        function updateLastTripStats() {
+            if (lastTripOrderNumber > 0) {
+                document.getElementById('lastTripStats').textContent = `Ostatni przejazd (#${lastTripOrderNumber}): ${lastTripDistance.toFixed(1)} km, ${formatTime(lastTripTime)}`;
+            } else {
+                document.getElementById('lastTripStats').textContent = `Ostatni przejazd: Brak`;
+            }
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${pad(h)}:${pad(m)}:${pad(s)}`;
+        }
+
+        function updateBreakInfo() {
+            const breakInfo = document.getElementById('breakInfo');
+            const button = document.getElementById('startBreakButton');
+
+            if (isOnBreak) {
+                breakInfo.textContent = `
+ Status: PRZERWA
+ Pozostało: ${formatTime(breakTimeLeft)}
+ `;
+                button.textContent = 'Zakończ przerwę';
+                button.classList.remove('break-button');
+                button.classList.add('cancel-button');
+            } else if (breakResetTime > 0) {
+                breakInfo.textContent = `
+ Status: OCZEKIWANIE (nie można rozpocząć)
+ Reset za: ${formatTime(breakResetTime)}
+ `;
+                button.textContent = 'Rozpocznij przerwę';
+                button.classList.remove('cancel-button');
+                button.classList.add('break-button');
+                button.disabled = true;
+            } else {
+                breakInfo.textContent = `
+ Status: DOSTĘPNY
+ Możesz rozpocząć 15-minutową przerwę.
+ `;
+                button.textContent = 'Rozpocznij przerwę';
+                button.classList.remove('cancel-button');
+                button.classList.add('break-button');
+                button.disabled = isStatusLockedBusy || activeOrders > 0;
+            }
+        }
+
+        function updateDriveInfo() {
+            const driveInfo = document.getElementById('driveInfo');
+            const button = document.getElementById('startDriveButton');
+
+            driveInfo.textContent = `
+ Status: ${isDriving ? 'JAZDA' : 'POSTÓJ'}
+ Czas jazdy: ${formatDriveTime(driveTime)}
+ Przejechany dystans: ${driveDistance.toFixed(1)} km
+ Obsłużone zlecenia: ${driveOrders}
+ `;
+            button.textContent = isDriving ? 'Zakończ jazdę' : 'Rozpocznij jazdę';
+            button.classList.toggle('cancel-button', isDriving);
+            button.classList.toggle('drive-button', !isDriving);
+        }
+
+        function formatDriveTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${pad(h)}:${pad(m)}`;
+        }
+
+        function startBreak() {
+            if (activeOrders > 0 || isStatusLockedBusy) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Nie możesz iść na przerwę, gdy masz aktywne zlecenie!';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+                return;
+            }
+            if (breakResetTime > 0) return;
+
+            isOnBreak = true;
+            isAvailable = false;
+            breakTimeLeft = 15 * 60; // 15 minut
+            updateStatusButton();
+            updateBreakInfo();
+
+            const breakTimer = setInterval(() => {
+                breakTimeLeft--;
+                updateBreakInfo();
+                if (breakTimeLeft <= 0) {
+                    clearInterval(breakTimer);
+                    endBreak();
+                }
+            }, 1000);
+            timers.set('breakTimer', breakTimer);
+        }
+
+        function endBreak() {
+            isOnBreak = false;
+            isAvailable = activeOrders === 0;
+            updateStatusButton();
+            clearInterval(timers.get('breakTimer'));
+            timers.delete('breakTimer');
+
+            breakResetTime = 60 * 60; // 60 minut oczekiwania
+            updateBreakInfo();
+
+            const resetTimer = setInterval(() => {
+                breakResetTime--;
+                updateBreakInfo();
+                if (breakResetTime <= 0) {
+                    clearInterval(resetTimer);
+                    breakResetTime = 0;
+                    updateBreakInfo();
+                }
+            }, 1000);
+            timers.set('resetTimer', resetTimer);
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = 'Przerwa zakończona. Status: Dostępny (po 60 min resetu)';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        let driveTimerInterval;
+        function startDrive() {
+            if (isDriving) {
+                endDrive();
+                return;
+            }
+            isDriving = true;
+            updateDriveInfo();
+            driveTimerInterval = setInterval(() => {
+                driveTime++;
+                updateDriveInfo();
+            }, 1000);
+        }
+
+        function endDrive() {
+            clearInterval(driveTimerInterval);
+            isDriving = false;
+            updateDriveInfo();
+        }
+
+        // Main logic to generate orders
+        let orderGenerationInterval;
+        document.addEventListener('DOMContentLoaded', () => {
+            orderGenerationInterval = setInterval(() => {
+                if (isAvailable && activeOrders < 3 && !isOnBreak) {
+                    const orderIndex = Math.floor(Math.random() * ordersPool.length);
+                    if (!usedOrders.has(orderIndex)) {
+                        usedOrders.add(orderIndex);
+                        showOrder(orderIndex);
+                    }
+                }
+            }, 7000); // Co 7 sekund spróbuj wygenerować nowe zlecenie
+
+            // Start drive timer
+            driveTimerInterval = setInterval(() => {
+                if (isDriving) {
+                    driveTime++;
+                    updateDriveInfo();
+                }
+            }, 1000);
+        });
+
+        // MODYFIKACJA FUNKCJI (DODANIE LIMITU CZASU)
+        function showOrder(orderIndex) {
+            const order = ordersPool[orderIndex];
+            const totalCost = order.totalCost;
+            const feeDetails = order.feeDetails;
+            const tip = order.tip;
+
+            orderSound.muted = isMuted;
+            const acceptanceTime = Math.floor(Math.random() * (50 - 30 + 1)) + 30; // 30-50 sekund
+            let timeLeft = acceptanceTime;
+
+            if (isFullscreenNotificationEnabled) {
+                showFullscreenNotification(orderIndex, order, totalCost, feeDetails, tip, timeLeft);
+            } else {
+                const orderDiv = document.createElement('div');
+                orderDiv.className = 'order-container';
+                orderDiv.id = `order${orderIndex}`;
+                orderDiv.innerHTML = `
+                    <h3>Zlecenie #${orderCounter + 1}: ${order.name}</h3>
+                    <p>Dystans: ${order.distance.toFixed(1)} km</p>
+                    <p>Koszt: ${totalCost.toFixed(2)} zł</p>
+                    ${feeDetails.length ? `<p>Dodatki: ${feeDetails.map(f => `${f.name} (+${f.cost} zł)`).join(', ')}</p>` : ''}
+                    ${tip > 0 ? `<p>Napiwek: ${tip.toFixed(2)} zł</p>` : ''}
+                    <p>Czas na akceptację: <span id="timeToAccept${orderIndex}">${timeLeft}s</span></p>
+                    <button class="order-button" onclick="acceptOrder(${orderIndex}, ${order.distance}, ${totalCost}, this, '${encodeURIComponent(JSON.stringify(feeDetails))}', ${tip}, ${orderCounter + 1})">Akceptuj</button>
+                    <button class="cancel-button" onclick="cancelOrder(${orderIndex}, this)">Odrzuć</button>
+                `;
+                document.getElementById('orderContainer').appendChild(orderDiv);
+
+                // START TIMERA
+                const timer = setInterval(() => {
+                    timeLeft--;
+                    const timeSpan = document.getElementById(`timeToAccept${orderIndex}`);
+                    if (timeSpan) {
+                        timeSpan.textContent = `${timeLeft}s`;
+                    }
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        const notification = document.createElement('div');
+                        notification.className = 'notification';
+                        notification.textContent = `Zlecenie #${orderCounter + 1} wygasło.`;
+                        document.body.appendChild(notification);
+                        setTimeout(() => notification.remove(), 3000);
+                        cancelOrder(orderIndex, orderDiv.querySelector('.cancel-button'));
+                    }
+                }, 1000);
+                orderTimers.set(orderIndex, timer);
+            }
+
+            orderCounter++;
+
+            const marker = L.marker([order.lat, order.lon]).addTo(map)
+                .bindPopup(`${order.name}<br><button onclick="removeMarker(${orderIndex})">Usuń</button>`)
+                .openPopup();
+            markers.set(orderIndex, marker);
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = `Zlecenie #${orderCounter}: ${order.name}, ${order.distance.toFixed(1)} km, ${totalCost.toFixed(2)} zł`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+
+            orderSound.muted = isMuted;
+            orderSound.play();
+        }
+        // KONIEC MODYFIKACJI
+
+
+        // MODYFIKACJA FUNKCJI (DODANIE LIMITU CZASU)
+        function showFullscreenNotification(orderIndex, order, totalCost, feeDetails, tip, timeLeft) {
+            const fullscreenNotification = document.getElementById('fullscreenNotification');
+            const timerElement = document.getElementById('fullscreenTimer');
+            const orderNumberElement = document.getElementById('fullscreenOrderNumber');
+            const locationElement = document.getElementById('fullscreenLocation');
+            const distanceElement = document.getElementById('fullscreenDistance');
+            const costElement = document.getElementById('fullscreenCost');
+            const phoneElement = document.getElementById('fullscreenPhoneNumber');
+            const acceptButton = document.getElementById('fullscreenAcceptButton');
+            const rejectButton = document.getElementById('fullscreenRejectButton');
+            const closeButton = fullscreenNotification.querySelector('.close-fullscreen');
+            
+            // Czyszczenie poprzednich timerów
+            if (timers.has('fullscreenTimer')) {
+                clearInterval(timers.get('fullscreenTimer'));
+                timers.delete('fullscreenTimer');
+            }
+
+            // Symulacja numeru telefonu i losowej godziny
+            const phoneNumber = `+48 500 XXX ${Math.floor(Math.random() * 900) + 100}`;
+            const pickupTime = Math.floor(Math.random() * (15 - 5 + 1)) + 5; // 5-15 min
+            
+            orderNumberElement.textContent = `Zlecenie #${orderCounter + 1}`;
+            phoneElement.textContent = `Klient: ${phoneNumber}`;
+            locationElement.textContent = `Adres: ${order.name}`;
+            distanceElement.textContent = `Dystans: ${order.distance.toFixed(1)} km (odb. za ${pickupTime} min)`;
+            costElement.innerHTML = `Koszt: **${totalCost.toFixed(2)} zł**${tip > 0 ? ` + ${tip.toFixed(2)} zł napiwku` : ''}`;
+            
+            let currentTimerTime = timeLeft;
+            timerElement.textContent = `Decyzja za: ${currentTimerTime}s`;
+
+            const fullscreenTimer = setInterval(() => {
+                currentTimerTime--;
+                timerElement.textContent = `Decyzja za: ${currentTimerTime}s`;
+                if (currentTimerTime <= 0) {
+                    clearInterval(fullscreenTimer);
+                    fullscreenNotification.style.display = 'none';
+                    const notification = document.createElement('div');
+                    notification.className = 'notification';
+                    notification.textContent = `Zlecenie #${orderCounter + 1} wygasło.`;
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+                    cancelOrder(orderIndex, rejectButton); // Użyj rejectButton jako referencji
+                }
+            }, 1000);
+            timers.set('fullscreenTimer', fullscreenTimer);
+
+            acceptButton.onclick = () => {
+                clearInterval(fullscreenTimer);
+                fullscreenNotification.style.display = 'none';
+                acceptOrder(orderIndex, order.distance, totalCost, null, encodeURIComponent(JSON.stringify(feeDetails)), tip, orderCounter + 1);
+            };
+
+            rejectButton.onclick = () => {
+                clearInterval(fullscreenTimer);
+                fullscreenNotification.style.display = 'none';
+                cancelOrder(orderIndex, rejectButton);
+            };
+            
+            closeButton.onclick = () => {
+                clearInterval(fullscreenTimer);
+                fullscreenNotification.style.display = 'none';
+                cancelOrder(orderIndex, rejectButton);
+            };
+
+            fullscreenNotification.style.display = 'flex';
+        }
+        // KONIEC MODYFIKACJI
+
+
+        function confirmArrival(orderIndex, button) {
+            arrivalConfirmed.set(orderIndex, true);
+            button.disabled = true;
+            button.style.background = '#666';
+            button.textContent = 'Przyjazd potwierdzony';
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = 'Przyjazd potwierdzony';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+
+            let timeElapsed = 0;
+            const timerElement = document.getElementById(`timer${orderIndex}`);
+            if (timerElement) {
+                timerElement.textContent = formatTime(timeElapsed);
+            }
+
+            const stopwatch = setInterval(() => {
+                timeElapsed++;
+                if (timerElement) {
+                    timerElement.textContent = formatTime(timeElapsed);
+                }
+                if (!document.getElementById(`order${orderIndex}`)) {
+                    clearInterval(stopwatch);
+                }
+            }, 1000);
+            timers.set(orderIndex, stopwatch);
+        }
+
+        // MODYFIKACJA FUNKCJI (CLEAR ORDER TIMER I BLOKADA STATUSU)
+        function acceptOrder(orderIndex, distance, totalCost, button, encodedFeeDetails, tip, orderNumber) {
+            // Czyszczenie timera akceptacji
+            clearInterval(orderTimers.get(orderIndex));
+            orderTimers.delete(orderIndex);
+            orderSound.muted = true;
+            
+            activeOrders++;
+            totalOrders++;
+            isAvailable = false; // Ustawia na zajęty
+            isStatusLockedBusy = true; // BLOKADA STATUSU
+            updateStatusButton();
+
+            document.getElementById('activeOrders').textContent = `Aktywne zlecenia: ${activeOrders}`;
+            updateEarningsStats();
+
+            const order = ordersPool[orderIndex];
+            const feeDetails = JSON.parse(decodeURIComponent(encodedFeeDetails));
+            
+            const orderDiv = button ? button.parentElement : document.createElement('div');
+            
+            if (!button) { // Jeśli akceptacja była z pełnego ekranu, stwórz element
+                document.getElementById('orderContainer').appendChild(orderDiv);
+            }
+
+            orderDiv.className = 'order-container';
+            orderDiv.id = `order${orderIndex}`;
+            orderDiv.innerHTML = `
+                <h3>Zlecenie #${orderNumber}: ${order.name}</h3>
+                <p>Dystans: ${distance.toFixed(1)} km</p>
+                <p>Koszt: ${totalCost.toFixed(2)} zł</p>
+                ${tip > 0 ? `<p>Napiwek: ${tip.toFixed(2)} zł</p>` : ''}
+                <p>Czas: <span id="timer${orderIndex}">**CZEKAJ NA PRZYJAZD**</span></p>
+                <button class="confirm-arrival-button" onclick="confirmArrival(${orderIndex}, this)">Potwierdź przyjazd</button>
+                <button class="end-button" onclick="endOrder(${orderIndex}, ${distance}, ${totalCost}, this, '${order.name}', '${encodeURIComponent(JSON.stringify(feeDetails))}', ${tip}, ${orderNumber})">Zakończ</button>
+                <button class="cancel-button" onclick="cancelActiveOrder(${orderIndex}, this)">Anuluj</button>
+            `;
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = `Zlecenie #${orderNumber} zaakceptowane. Rozpocznij przejazd!`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+            
+            // Start automatycznej jazdy (opcjonalnie)
+            if (!isDriving) {
+                startDrive();
+            }
+        }
+
+        // MODYFIKACJA FUNKCJI (DODANIE ZMIENNYCH STATYSTYK, ZWALNIANIE BLOKADY STATUSU)
+        function endOrder(orderIndex, distance, totalCost, button, name, encodedFeeDetails, tip, orderNumber) {
+            if (!arrivalConfirmed.get(orderIndex)) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Najpierw musisz potwierdzić przyjazd!';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+                return;
+            }
+
+            const timeElapsed = timers.has(orderIndex) ? Math.floor(timers.get(orderIndex) / 1000) : 0;
+            clearInterval(timers.get(orderIndex));
+            timers.delete(orderIndex);
+
+            activeOrders = Math.max(0, activeOrders - 1);
+            totalKilometers += distance;
+            totalEarnings += totalCost;
+            totalEarnings += tip;
+
+            const fuelConsumed = calculateFuelConsumption(distance, currentDrivingStyle);
+            const fuelCost = fuelConsumed * FUEL_PRICE_PER_LITER;
+
+            pendingFuelConsumed += fuelConsumed;
+            pendingFuelCost += fuelCost;
+            netEarnings = totalEarnings - totalFuelCost - pendingFuelCost;
+
+            // Zapis ostatniego przejazdu
+            lastTripDistance = distance;
+            lastTripTime = timeElapsed;
+            lastTripOrderNumber = orderNumber;
+            updateLastTripStats();
+
+            // NOWA LOGIKA: Zwalnianie blokady statusu
+            if (activeOrders === 0) {
+                isStatusLockedBusy = false;
+                isAvailable = true; // Zawsze wracamy do dostępności, jeśli to ostatnie zlecenie
+            }
+            // KONIEC NOWEJ LOGIKI
+            updateStatusButton();
+
+            document.getElementById('totalEarnings').textContent = `${totalEarnings.toFixed(2)} zł`;
+            document.getElementById('fuelCost').textContent = `Koszty paliwa: ${totalFuelCost.toFixed(2)} zł (Oczekujące: ${pendingFuelCost.toFixed(2)} zł)`;
+            document.getElementById('netEarnings').textContent = `Zarobki netto: ${netEarnings.toFixed(2)} zł`;
+            document.getElementById('totalKilometers').textContent = `Przejechane kilometry: ${totalKilometers.toFixed(1)} km`;
+            document.getElementById('activeOrders').textContent = `Aktywne zlecenia: ${activeOrders}`;
+            document.getElementById('totalFuel').textContent = `Zużyte paliwo: ${totalFuelConsumed.toFixed(2)} l`;
+            document.getElementById('deductFuelButton').disabled = pendingFuelCost === 0;
+            updateEarningsStats();
+
+            const orderDiv = document.getElementById(`order${orderIndex}`);
+            if (orderDiv) orderDiv.remove();
+
+            saveReceipt(orderIndex, name, distance, totalCost, encodedFeeDetails, fuelConsumed, fuelCost, currentDrivingStyle, tip);
+
+            completeOrder(orderIndex);
+
+            if (isDriving) {
+                driveDistance += distance;
+                driveOrders++;
+                updateDriveInfo();
+            }
+            updateFuelInfo();
+
+            moneySound.loop = true;
+            moneySound.play();
+            setTimeout(() => {
+                moneySound.pause();
+                moneySound.currentTime = 0;
+                moneySound.loop = false;
+            }, 5000);
+            
+            arrivalConfirmed.delete(orderIndex);
+        }
+        // KONIEC MODYFIKACJI
+
+        function cancelOrder(orderIndex, button) {
+            orderSound.muted = true;
+            if (button.parentElement) {
+                button.parentElement.remove();
+            } else if (button.id && document.getElementById(button.id)) {
+                document.getElementById(button.id).remove();
+            }
+            // CZYSZCZENIE TIMERA AKCEPTACJI
+            clearInterval(orderTimers.get(orderIndex));
+            orderTimers.delete(orderIndex);
+            // KONIEC CZYSZCZENIA
+            completeOrder(orderIndex);
+        }
+
+        // MODYFIKACJA FUNKCJI (ZWALNIANIE BLOKADY STATUSU)
+        function cancelActiveOrder(orderIndex, button) {
+            activeOrders = Math.max(0, activeOrders - 1);
+
+            // NOWA LOGIKA: Zwalnianie blokady statusu
+            if (activeOrders === 0) {
+                isStatusLockedBusy = false;
+                isAvailable = true; // Zawsze wracamy do dostępności
+            }
+            // KONIEC NOWEJ LOGIKI
+            updateStatusButton();
+            document.getElementById('activeOrders').textContent = `Aktywne zlecenia: ${activeOrders}`;
+            
+            if (button.parentElement) {
+                button.parentElement.remove();
+            }
+            
+            clearInterval(timers.get(orderIndex));
+            timers.delete(orderIndex);
+            arrivalConfirmed.delete(orderIndex);
+            completeOrder(orderIndex);
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = 'Zlecenie aktywne anulowane. Status: Dostępny.';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+        // KONIEC MODYFIKACJI
+
+        function completeOrder(orderIndex) {
+            const marker = markers.get(orderIndex);
+            if (marker) {
+                map.removeLayer(marker);
+                markers.delete(orderIndex);
+            }
+        }
+
+        function removeMarker(orderIndex) {
+            const marker = markers.get(orderIndex);
+            if (marker) {
+                map.removeLayer(marker);
+                markers.delete(orderIndex);
+            }
+        }
+
+        function saveReceipt(orderIndex, name, distance, totalCost, encodedFeeDetails, fuelConsumed, fuelCost, drivingStyle, tip) {
+            const date = new Date().toLocaleString('pl-PL');
+            const feeDetails = JSON.parse(decodeURIComponent(encodedFeeDetails));
+            
+            const receipt = {
+                id: receipts.length + 1,
+                date,
+                name,
+                distance: distance.toFixed(1),
+                totalCost: totalCost.toFixed(2),
+                baseFare: calculateBaseCost(distance).toFixed(2),
+                fees: feeDetails,
+                tip: tip.toFixed(2),
+                fuelConsumed: fuelConsumed.toFixed(2),
+                fuelCost: fuelCost.toFixed(2),
+                netIncome: (totalCost + tip - fuelCost).toFixed(2), // Dodano napiwek
+                drivingStyle
+            };
+            receipts.push(receipt);
+            
+            receiptSound.muted = isMuted;
+            receiptSound.play();
+        }
+
+        function renderReceipts() {
+            receiptsPanel.innerHTML = '<h3>Lista Rachunków</h3>';
+            if (receipts.length === 0) {
+                receiptsPanel.innerHTML += '<p>Brak zapisanych rachunków.</p>';
+                return;
+            }
+            receipts.forEach(receipt => {
+                const receiptDiv = document.createElement('div');
+                receiptDiv.className = 'receipt-container';
+                receiptDiv.innerHTML = `
+                    <p>#${receipt.id}: ${receipt.name.split(' -> ')[0]} (${receipt.totalCost} zł)</p>
+                    <button class="receipt-button" onclick="showReceiptPopup(${receipt.id})">Szczegóły</button>
+                `;
+                receiptsPanel.appendChild(receiptDiv);
+            });
+        }
+
+        function showReceiptPopup(receiptId) {
+            const receipt = receipts.find(r => r.id === receiptId);
+            if (!receipt) return;
+
+            let feeString = '';
+            let feeTotal = 0;
+            receipt.fees.forEach(fee => {
+                feeString += `${fee.name.padEnd(20)} ${fee.cost.toFixed(2)} zł\n`;
+                feeTotal += fee.cost;
+            });
+            
+            const subtotal = (parseFloat(receipt.baseFare) + feeTotal).toFixed(2);
+            
+            const receiptText = `
+ --------------------------------------
+ UBER - Faktura VAT (Nieoficjalna)
+ --------------------------------------
+ Pojazd: ${vehicleName}
+ Data: ${receipt.date}
+ Lokalizacja: ${receipt.name}
+ Dystans: ${receipt.distance} km
+ --------------------------------------
+ Podstawa taryfy:       ${receipt.baseFare} zł
+ Dodatkowe opłaty:      ${feeTotal.toFixed(2)} zł
+ ${feeString}
+ Suma (brutto):         ${subtotal} zł
+ Napiwek:               ${receipt.tip} zł
+ KOSZT CAŁKOWITY:       ${(parseFloat(receipt.totalCost) + parseFloat(receipt.tip)).toFixed(2)} zł
+ --------------------------------------
+ KOSZTY PALIWA:
+ Zużyte paliwo:         ${receipt.fuelConsumed} l
+ Koszt:                 ${receipt.fuelCost} zł
+ Styl jazdy:            ${receipt.drivingStyle}
+ --------------------------------------
+ ZAROBEK NETTO:         ${receipt.netIncome} zł
+ --------------------------------------
+             Dziękujemy!
+ --------------------------------------
+ `;
+
+            receiptPopup.innerHTML = `
+                <h3>Rachunek #${receipt.id}</h3>
+                <div class="receipt-container" style="padding: 10px; margin: 0;">${receiptText}</div>
+                <button class="discard-receipt-button" onclick="discardReceipt(${receipt.id})">Usuń i skoryguj koszty</button>
+                <button class="receipt-button" onclick="receiptPopup.style.display = 'none'">Zamknij</button>
+            `;
+            receiptPopup.style.display = 'block';
+        }
+
+        // MODYFIKACJA FUNKCJI (ZWALNIANIE BLOKADY STATUSU, KOREKTA ZAROBKÓW I KOSZTÓW)
+        function discardReceipt(receiptId) {
+            const index = receipts.findIndex(r => r.id === receiptId);
+            if (index > -1) {
+                const discardedReceipt = receipts.splice(index, 1)[0];
+
+                // Odbicie kosztów paliwa
+                totalFuelCost -= parseFloat(discardedReceipt.fuelCost);
+                totalFuelConsumed -= parseFloat(discardedReceipt.fuelConsumed);
+                totalEarnings -= parseFloat(discardedReceipt.totalCost); // Odbicie zarobków brutto
+                totalEarnings -= parseFloat(discardedReceipt.tip); // Odbicie napiwku
+
+                netEarnings = totalEarnings - totalFuelCost;
+
+                document.getElementById('fuelCost').textContent = `Koszty paliwa: ${totalFuelCost.toFixed(2)} zł (Oczekujące: ${pendingFuelCost.toFixed(2)} zł)`;
+                document.getElementById('netEarnings').textContent = `Zarobki netto: ${netEarnings.toFixed(2)} zł`;
+                document.getElementById('totalFuel').textContent = `Zużyte paliwo: ${totalFuelConsumed.toFixed(2)} l`;
+                document.getElementById('totalEarnings').textContent = `${totalEarnings.toFixed(2)} zł`;
+                
+                totalOrders = Math.max(0, totalOrders - 1);
+                updateEarningsStats();
+
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = `Rachunek #${receiptId} usunięty. Koszty i zarobki skorygowane.`;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+
+                updateFuelInfo();
+                renderReceipts();
+            }
+            receiptPopup.style.display = 'none';
+        }
+        // KONIEC MODYFIKACJI
+
+
+        // Support chat logic
+        function sendSupportRequest(message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const supportButton = document.getElementById('supportButton');
+
+            // Wyczyść powiadomienie po wysłaniu wiadomości
+            supportButton.classList.remove('notify');
+
+            const requestDiv = document.createElement('div');
+            requestDiv.className = 'chat-message driver';
+            requestDiv.textContent = `Ja: ${message}`;
+            chatMessages.appendChild(requestDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const supportResponses = [
+                'Dziękujemy za kontakt. Nasz konsultant skontaktuje się z Tobą w ciągu 5 minut.',
+                'Proszę czekać, sprawdzamy Pana zgłoszenie.',
+                'Przepraszamy za niedogodności. Prosimy o cierpliwość.',
+                'Jesteśmy w trakcie weryfikacji. Proszę nie zamykać czatu.',
+                'Czy może Pan/Pani podać numer zlecenia, którego dotyczy problem?'
+            ];
+
+            setTimeout(() => {
+                let response;
+                if (message === 'Anuluj zlecenie') {
+                    const activeOrderDiv = document.querySelector('.order-container');
+                    if (activeOrderDiv) {
+                        const orderIndexMatch = activeOrderDiv.id.match(/order(\d+)/);
+                        const orderIndex = orderIndexMatch ? parseInt(orderIndexMatch[1]) : -1;
+
+                        activeOrders = Math.max(0, activeOrders - 1);
+
+                        // NOWA LOGIKA: Zwalnianie blokady statusu
+                        if (activeOrders === 0) {
+                            isStatusLockedBusy = false;
+                            isAvailable = true; 
+                        }
+                        
+                        updateStatusButton();
+                        document.getElementById('activeOrders').textContent = `Aktywne zlecenia: ${activeOrders}`;
+                        activeOrderDiv.remove();
+                        if (orderIndex !== -1) {
+                            completeOrder(orderIndex);
+                        }
+                        response = 'Zlecenie anulowane.';
+                    } else {
+                        response = 'Brak aktywnych zleceń do anulowania.';
+                    }
+                } else {
+                    response = supportResponses[Math.floor(Math.random() * supportResponses.length)];
+                }
+
+                const responseDiv = document.createElement('div');
+                responseDiv.className = 'chat-message support';
+                responseDiv.textContent = `Support: ${response}`;
+                chatMessages.appendChild(responseDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                supportButton.classList.add('notify');
+                chatSound.loop = true;
+                chatSound.play();
+                setTimeout(() => {
+                    chatSound.pause();
+                    chatSound.currentTime = 0;
+                    chatSound.loop = false;
+                }, 5000);
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
